@@ -1,0 +1,20 @@
+# Dependencias (se reinstalan con npm install)
+node_modules/
+# Variables de entorno con credenciales y secretos
+.env
+.env.*
+!.env.example
+# Logs
+*.log
+npm-debug.log*
+# Sistema operativo y editores
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+# Temporales
+coverage/
+dist/
+tmp/
+Los package

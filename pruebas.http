@@ -1,0 +1,151 @@
+### =====================================================
+### Pruebas del sistema SOA RRHH (Paso 15 de la guia)
+### Abrir en VS Code con la extension REST Client y dar
+### clic en "Send Request" sobre cada peticion, en orden.
+### =====================================================
+
+@gateway = http://localhost:3000
+
+### Prueba 1: Verificar que el Gateway esta vivo
+GET {{gateway}}/health
+
+### Prueba 2: Obtener token JWT (login)
+# @name login
+POST {{gateway}}/auth/login
+Content-Type: application/json
+
+{"usuario":"admin","password":"1234"}
+
+### El token de la Prueba 2 se usa solo en las siguientes peticiones
+@token = {{login.response.body.token}}
+
+### Prueba 2b (error): Login con credenciales invalidas -> 401
+POST {{gateway}}/auth/login
+Content-Type: application/json
+
+{"usuario":"admin","password":"mala"}
+
+### Prueba 3 (error): Sin token -> 401 Token requerido
+GET {{gateway}}/api/empleados
+
+### Prueba 3b (error): Token invalido -> 401 Token invalido o expirado
+GET {{gateway}}/api/empleados
+Authorization: Bearer token_falso_123
+
+### Prueba 4: Crear empleado -> 201
+POST {{gateway}}/api/empleados
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "cedula": "1712345678",
+  "nombre": "Ana",
+  "apellido": "Torres",
+  "cargo": "Desarrolladora Backend",
+  "departamento": "TI",
+  "salario_base": 1500
+}
+
+### Prueba 4b (error): Dato faltante -> 400
+POST {{gateway}}/api/empleados
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"cedula":"1799999999","nombre":"Sin","apellido":"Cargo"}
+
+### Prueba 5: Listar empleados
+GET {{gateway}}/api/empleados
+Authorization: Bearer {{token}}
+
+### Prueba 5b: Listar con filtro por departamento
+GET {{gateway}}/api/empleados?departamento=TI
+Authorization: Bearer {{token}}
+
+### Prueba 6 (error): Cedula duplicada -> 409
+POST {{gateway}}/api/empleados
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"cedula":"1712345678","nombre":"Otro","apellido":"Nombre","cargo":"Dev","departamento":"TI","salario_base":1000}
+
+### Prueba 7: Calcular nomina del empleado id=1 -> 201 (neto 1579.38)
+POST {{gateway}}/api/nomina/calcular
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "empleado_id": 1,
+  "periodo": "2025-04",
+  "salario_base": 1500,
+  "horas_extra": 5,
+  "bono": 100,
+  "descuentos": 67.50
+}
+
+### Prueba 7b (error): Periodo con formato invalido -> 400
+POST {{gateway}}/api/nomina/calcular
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"empleado_id":1,"periodo":"04-2025","salario_base":1500}
+
+### Prueba 7c: Historial de nomina del empleado 1
+GET {{gateway}}/api/nomina/1
+Authorization: Bearer {{token}}
+
+### Prueba 8: Publicar vacante -> 201
+# @name vacante
+POST {{gateway}}/api/reclutamiento/vacantes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "titulo": "Backend Developer Node.js",
+  "descripcion": "Desarrollar APIs REST para el sistema de RRHH",
+  "requisitos": ["Node.js", "PostgreSQL", "Docker"],
+  "salario": 1800
+}
+
+### Prueba 8b (error): Vacante sin titulo -> 400
+POST {{gateway}}/api/reclutamiento/vacantes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"descripcion":"Sin titulo"}
+
+### Prueba 9: Registrar candidato a la vacante -> 201
+# @name candidato
+POST {{gateway}}/api/reclutamiento/candidatos
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nombre": "Carlos",
+  "apellido": "Perez",
+  "email": "carlos@email.com",
+  "vacante_id": "{{vacante.response.body._id}}"
+}
+
+### Prueba 10: Cambiar estado del candidato a entrevista
+PUT {{gateway}}/api/reclutamiento/candidatos/{{candidato.response.body._id}}/estado
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "estado": "entrevista",
+  "notas": "Perfil tecnico aprobado, agendar entrevista"
+}
+
+### Prueba 10b (error): Estado no valido -> 400
+PUT {{gateway}}/api/reclutamiento/candidatos/{{candidato.response.body._id}}/estado
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"estado":"contratado"}
+
+### Prueba 11: Listar candidatos (muestra el titulo de la vacante)
+GET {{gateway}}/api/reclutamiento/candidatos
+Authorization: Bearer {{token}}
+
+### Prueba 12: Metricas del Gateway para Prometheus
+GET {{gateway}}/metrics
