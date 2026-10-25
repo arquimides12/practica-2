@@ -39,13 +39,14 @@ app.post('/nomina/calcular', async (req, res) => {
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(periodo))
     return res.status(400).json({ error: 'Formato de periodo invalido. Use YYYY-MM' });
   // Calculo: hora extra = (salario / 240) * 1.5
-  const valor_hora_extra = parseFloat((salario_base / 240 * 1.5).toFixed(2));
-  const neto = parseFloat((
-    parseFloat(salario_base) +
-    (horas_extra * valor_hora_extra) +
-    parseFloat(bono) -
-    parseFloat(descuentos)
-  ).toFixed(2));
+  // Se redondea solo al final para no perder centavos (5 h * 9.375 = 46.88, no 46.90)
+  const redondear = n => parseFloat(Number(n).toFixed(2));
+  const valor_hora = parseFloat(salario_base) / 240 * 1.5;
+  const valor_hora_extra = redondear(valor_hora);
+  const extras = redondear(horas_extra * valor_hora);
+  const neto = redondear(
+    parseFloat(salario_base) + extras + parseFloat(bono) - parseFloat(descuentos)
+  );
   try {
     const registro = await Nomina.create({
       empleado_id, periodo, salario_base,
@@ -55,7 +56,7 @@ app.post('/nomina/calcular', async (req, res) => {
       ...registro.toJSON(),
       resumen: {
         salario_base: parseFloat(salario_base),
-        extras: parseFloat((horas_extra * valor_hora_extra).toFixed(2)),
+        extras,
         bono: parseFloat(bono),
         descuentos: parseFloat(descuentos),
         neto_a_pagar: neto

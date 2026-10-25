@@ -1,6 +1,6 @@
 # rrhh-soa - Sistema de Gestion de RRHH con Arquitectura Orientada a Servicios
 
-Practica 2 - Arquitectura de Software (NRC 32829) - Grupo 4
+Practica 2 - Arquitectura de Software (NRC 32828) - Anderson Campos
 
 ## Componentes
 
@@ -39,3 +39,6 @@ Prometheus: http://localhost:9090 (Status > Targets, y consultar `gateway_http_r
 2. **Mensajeria asincrona (objetivo 4)**: Empleados publica el evento `empleado.creado` en Redis y
    Nomina lo recibe por suscripcion (`src/eventos.js` en cada servicio).
 3. **Metricas (objetivo 4)**: el Gateway expone `/metrics` con `prom-client` y Prometheus lo consulta cada 5 s.
+4. **Calculo de nomina (`services/nomina/src/index.js`)**: el valor de la hora extra se redondeaba antes de
+   multiplicarlo por las horas (5 x 9.38 = 46.90) y el neto daba 1579.40. Ahora se redondea solo al final
+   (5 x 9.375 = 46.88) y el neto es 1579.38, como indica la guia.
